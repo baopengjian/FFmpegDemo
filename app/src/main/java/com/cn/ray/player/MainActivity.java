@@ -42,4 +42,16 @@ public class MainActivity extends AppCompatActivity {
     public void start(View view) {
         dnPlayer.prepare();
     }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        dnPlayer.stop();
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        dnPlayer.release();
+    }
 }

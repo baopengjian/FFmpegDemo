@@ -33,7 +33,7 @@ public:
     pthread_t pid_play;
     pthread_t pid_stop;
     AVFormatContext *formatContext = 0;
-    JavaCallHelper* callHelper;
+    JavaCallHelper* callHelper = 0;
     AudioChannel *audioChannel = 0;
     VideoChannel *videoChannel = 0;
     RenderFrameCallback callback;

@@ -52,7 +52,7 @@ void DNFFmpeg::_prepare() {
     //ret不为0表示 打开媒体失败
     if (ret != 0) {
         LOGE("打开媒体失败:%s", av_err2str(ret));
-        if (isPlaying) {
+        if (callHelper) {
             callHelper->onError(THREAD_CHILD, FFMPEG_CAN_NOT_OPEN_URL);
         }
         return;
@@ -62,7 +62,7 @@ void DNFFmpeg::_prepare() {
     // 小于0 则失败
     if (ret < 0) {
         LOGE("查找流失败:%s", av_err2str(ret));
-        if (isPlaying) {
+        if (callHelper) {
             callHelper->onError(THREAD_CHILD, FFMPEG_CAN_NOT_FIND_STREAMS);
         }
         return;
@@ -79,7 +79,7 @@ void DNFFmpeg::_prepare() {
         AVCodec *dec = avcodec_find_decoder(codecpar->codec_id);
         if (dec == NULL) {
             LOGE("查找解码器失败:%s", av_err2str(ret));
-            if (isPlaying) {
+            if (callHelper) {
                 callHelper->onError(THREAD_CHILD, FFMPEG_FIND_DECODER_FAIL);
             }
             return;
@@ -88,7 +88,7 @@ void DNFFmpeg::_prepare() {
         AVCodecContext *context = avcodec_alloc_context3(dec);
         if (context == NULL) {
             LOGE("创建解码上下文失败:%s", av_err2str(ret));
-            if (isPlaying) {
+            if (callHelper) {
                 callHelper->onError(THREAD_CHILD, FFMPEG_ALLOC_CODEC_CONTEXT_FAIL);
             }
             return;
@@ -100,7 +100,7 @@ void DNFFmpeg::_prepare() {
         //失败
         if (ret < 0) {
             LOGE("设置解码上下文参数失败:%s", av_err2str(ret));
-            if (isPlaying) {
+            if (callHelper) {
                 callHelper->onError(THREAD_CHILD, FFMPEG_CODEC_CONTEXT_PARAMETERS_FAIL);
             }
             return;
@@ -109,7 +109,7 @@ void DNFFmpeg::_prepare() {
         ret = avcodec_open2(context, dec, 0);
         if (ret != 0) {
             LOGE("打开解码器失败:%s", av_err2str(ret));
-            if (isPlaying) {
+            if (callHelper) {
                 callHelper->onError(THREAD_CHILD, FFMPEG_OPEN_DECODER_FAIL);
             }
             return;
@@ -137,7 +137,7 @@ void DNFFmpeg::_prepare() {
         return;
     }
     // 准备完了 通知java 你随时可以开始播放
-    if (isPlaying) {
+    if(callHelper){
         callHelper->onPrepare(THREAD_CHILD);
     }
 };
@@ -215,10 +215,11 @@ void DNFFmpeg::setRenderFrameCallback(RenderFrameCallback callback) {
     this->callback = callback;
 }
 
-void *aync_stop(void *args) {
+void *async_stop(void *args) {
     DNFFmpeg *ffmpeg = static_cast<DNFFmpeg *>(args);
     //   等待prepare结束
     pthread_join(ffmpeg->pid, 0);
+    ffmpeg->isPlaying = 0;
     // 保证 start线程结束
     pthread_join(ffmpeg->pid_play, 0);
     DELETE(ffmpeg->videoChannel);
@@ -235,8 +236,7 @@ void *aync_stop(void *args) {
 }
 
 void DNFFmpeg::stop() {
-    isPlaying = 0;
     callHelper = 0;
     // formatContext
-    pthread_create(&pid_stop, 0, aync_stop, this);
+    pthread_create(&pid_stop, 0, async_stop, this);
 };
