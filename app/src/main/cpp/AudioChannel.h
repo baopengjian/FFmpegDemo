@@ -1,3 +1,5 @@
+//
+//
 
 #ifndef PLAYER_AUDIOCHANNEL_H
 #define PLAYER_AUDIOCHANNEL_H
@@ -6,16 +8,20 @@
 #include "BaseChannel.h"
 #include <SLES/OpenSLES.h>
 #include <SLES/OpenSLES_Android.h>
-extern  "C"{
+
+extern "C" {
 #include <libswresample/swresample.h>
 };
 
-class AudioChannel: public BaseChannel {
+class AudioChannel : public BaseChannel {
 public:
-    AudioChannel(int id,AVCodecContext *avCodecContext,AVRational time_base);
+    AudioChannel(int id, AVCodecContext *avCodecContext, AVRational time_base);
+
     ~AudioChannel();
 
     void play();
+
+    void stop();
 
     void decode();
 
@@ -29,8 +35,8 @@ public:
     int out_samplesize;
     int out_sample_rate;
 private:
-    pthread_t  pid_audio_decode;
-    pthread_t  pid_audio_play;
+    pthread_t pid_audio_decode;
+    pthread_t pid_audio_play;
 
 
     /**
@@ -45,8 +51,8 @@ private:
     SLObjectItf bqPlayerObject = 0;
     //播放器接口
     SLPlayItf bqPlayerInterface = 0;
-
-    SLAndroidSimpleBufferQueueItf bqPlayerBufferQueueInterface =0;
+    //队列结构
+    SLAndroidSimpleBufferQueueItf bqPlayerBufferQueueInterface = 0;
 
 
     //重采样

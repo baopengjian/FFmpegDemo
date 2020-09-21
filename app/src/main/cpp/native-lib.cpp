@@ -2,11 +2,13 @@
 #include <string>
 #include <android/native_window_jni.h>
 #include "DNFFmpeg.h"
+#include "macro.h"
 
 DNFFmpeg *ffmpeg = 0;
 JavaVM *javaVm = 0;
 ANativeWindow *window = 0;
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER ;
+JavaCallHelper *helper = 0;
 
 int JNI_OnLoad(JavaVM *vm, void *r) {
     javaVm = vm;
@@ -50,7 +52,7 @@ Java_com_cn_ray_player_DNPlayer_native_1prepare(JNIEnv *env, jobject instance,
                                                 jstring dataSource_) {
     const char *dataSource = env->GetStringUTFChars(dataSource_, 0);
     //创建播放器
-    JavaCallHelper *helper = new JavaCallHelper(javaVm, env, instance);
+     helper = new JavaCallHelper(javaVm, env, instance);
     ffmpeg = new DNFFmpeg(helper, dataSource);
     ffmpeg->setRenderFrameCallback(render);
     ffmpeg->prepare();
@@ -80,5 +82,21 @@ Java_com_cn_ray_player_DNPlayer_native_1setSurface(JNIEnv *env, jobject instance
 extern "C"
 JNIEXPORT void JNICALL
 Java_com_cn_ray_player_DNPlayer_native_1stop(JNIEnv *env, jobject instance) {
+    if (ffmpeg) {
+        ffmpeg->stop();
+    }
+    DELETE(helper);
+}
 
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_cn_ray_player_DNPlayer_native_1release(JNIEnv *env, jobject instance) {
+
+    pthread_mutex_lock(&mutex);
+    if (window) {
+        //把老的释放
+        ANativeWindow_release(window);
+        window = 0;
+    }
+    pthread_mutex_unlock(&mutex);
 }

@@ -24,11 +24,14 @@ public:
     void start();
     void _start();
 
+    void stop();
+
     void setRenderFrameCallback(RenderFrameCallback callback);
-private:
+public:
     char *dataSource;
     pthread_t pid;
     pthread_t pid_play;
+    pthread_t pid_stop;
     AVFormatContext *formatContext = 0;
     JavaCallHelper* callHelper;
     AudioChannel *audioChannel = 0;

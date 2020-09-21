@@ -117,6 +117,7 @@ int AudioChannel::getPcm() {
     //获取 frame 的一个相对播放时间 （相对开始播放）
     // 获得 相对播放这一段数据的秒数
     clock = frame->pts * av_q2d(time_base);
+    releaseAvFrame(&frame);
     return data_size;
 }
 
@@ -219,4 +220,37 @@ void AudioChannel::_play() {
      * 6、手动激活一下这个回调
      */
     bqPlayerCallback(bqPlayerBufferQueueInterface, this);
+}
+
+void AudioChannel::stop() {
+    isPlaying = 0;
+    packets.setWork(0);
+    frames.setWork(0);
+    pthread_join(pid_audio_decode,0);
+    pthread_join(pid_audio_play,0);
+    if(swrContext){
+        swr_free(&swrContext);
+        swrContext = 0;
+    }
+
+    //释放播放器
+    if(bqPlayerObject){
+        (*bqPlayerObject)->Destroy(bqPlayerObject);
+        bqPlayerObject = 0;
+        bqPlayerInterface = 0;
+        bqPlayerBufferQueueInterface = 0;
+    }
+
+    //释放混音器
+    if(outputMixObject){
+        (*outputMixObject)->Destroy(outputMixObject);
+        outputMixObject = 0;
+    }
+
+    //释放引擎
+    if(engineObject){
+        (*engineObject)->Destroy(engineObject);
+        engineObject = 0;
+        engineInterface = 0;
+    }
 }

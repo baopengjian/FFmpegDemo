@@ -110,5 +110,7 @@ public class DNPlayer implements SurfaceHolder.Callback {
 
     native void native_stop();
 
+    native void native_release();
+
     native void native_setSurface(Surface suface);
 }
