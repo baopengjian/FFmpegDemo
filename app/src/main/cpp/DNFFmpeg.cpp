@@ -133,11 +133,13 @@ void DNFFmpeg::_prepare() {
     //没有音视频  (很少见)
     if (!audioChannel && !videoChannel) {
         LOGE("没有音视频");
-        callHelper->onError(THREAD_CHILD, FFMPEG_NOMEDIA);
+        if (callHelper) {
+            callHelper->onError(THREAD_CHILD, FFMPEG_NOMEDIA);
+        }
         return;
     }
     // 准备完了 通知java 你随时可以开始播放
-    if(callHelper){
+    if (callHelper) {
         callHelper->onPrepare(THREAD_CHILD);
     }
 };

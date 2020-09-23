@@ -50,6 +50,9 @@ public class DNPlayer implements SurfaceHolder.Callback {
     }
 
     public void setSurfaceView(SurfaceView surfaceView) {
+        if(null != holder){
+            holder.removeCallback(this);
+        }
         holder = surfaceView.getHolder();
         holder.addCallback(this);
     }
