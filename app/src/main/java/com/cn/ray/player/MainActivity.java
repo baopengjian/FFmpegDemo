@@ -2,6 +2,7 @@ package com.cn.ray.player;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.Environment;
 import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
 import android.view.SurfaceView;
@@ -19,9 +20,6 @@ import java.util.Map;
 /**
  * 测试url
  * <p>
- *
- *
- *
  */
 public class MainActivity extends AppCompatActivity {
 
@@ -37,7 +35,7 @@ public class MainActivity extends AppCompatActivity {
 
         List<Map<String, String>> list = getData();
 
-        lv.setAdapter(new CommonAdapter<Map<String, String>>(MainActivity.this,list,R.layout.item ) {
+        lv.setAdapter(new CommonAdapter<Map<String, String>>(MainActivity.this, list, R.layout.item) {
             @Override
             public void convert(ViewHolder helper, final Map<String, String> item) {
                 ((TextView) helper.getConvertView()).setText(item.get("name"));
@@ -45,7 +43,7 @@ public class MainActivity extends AppCompatActivity {
                     @Override
                     public void onClick(View v) {
                         Intent intent = new Intent(MainActivity.this, DnPlayerActivity.class);
-                        intent.putExtra("url",item.get("url"));
+                        intent.putExtra("url", item.get("url"));
                         startActivity(intent);
                     }
                 });
@@ -55,14 +53,21 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
-    public List<Map<String,String>> getData() {
-        List<Map<String,String>> list = new ArrayList<>();
-        for(String[] s:SOURCES){
-            Map<String,String> map = new HashMap<>();
-            map.put("name",s[0]);
-            map.put("url",s[1]);
+    public List<Map<String, String>> getData() {
+        List<Map<String, String>> list = new ArrayList<>();
+        for (String[] s : SOURCES) {
+            Map<String, String> map = new HashMap<>();
+            map.put("name", s[0]);
+            map.put("url", s[1]);
             list.add(map);
         }
+
+        String file = Environment.getExternalStorageDirectory().getAbsolutePath() + "/test/dx_test.mp4";
+        Map<String, String> map = new HashMap<>();
+        map.put("name", "读取本地/test/dx_test.mp4");
+        map.put("url",file);
+        list.add(map);
+
         return list;
     }
 }

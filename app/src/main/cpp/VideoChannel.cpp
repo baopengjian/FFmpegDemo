@@ -51,9 +51,8 @@ void dropAvFrame(queue<AVFrame *> &q) {
     }
 }
 
-VideoChannel::VideoChannel(int id, AVCodecContext *avCodecContext, AVRational time_base, int fps)
-        : BaseChannel(id,
-                      avCodecContext, time_base) {
+VideoChannel::VideoChannel(int id, JavaCallHelper *javaCallHelper, AVCodecContext *avCodecContext, AVRational time_base, int fps)
+        : BaseChannel(id, javaCallHelper, avCodecContext, time_base) {
 
     this->fps = fps;
     //  用于 设置一个 同步操作 队列的一个函数指针
@@ -83,6 +82,10 @@ void VideoChannel::play() {
 void VideoChannel::decode() {
     AVPacket *packet = 0;
     while (isPlaying) {
+        if (frames.size() > 500) {
+            av_usleep(1000 * 10);
+            continue;
+        }
         //取出一个数据包
         int ret = packets.pop(packet);
         if (!isPlaying) {
@@ -135,15 +138,25 @@ void VideoChannel::render() {
         if (!isPlaying) {
             break;
         }
-        //src_linesize: 表示每一行存放的 字节长度
-        sws_scale(swsContext, reinterpret_cast<const uint8_t *const *>(frame->data),
-                  frame->linesize, 0,
-                  avCodecContext->height,
-                  dst_data,
-                  dst_linesize);
+        if (!ret) {
+            continue;
+        }
 #if 1
+        /**
+         *  seek需要注意的点：编码器中存在缓存
+         *  100s 的图像,用户seek到第 50s 的位置
+         *  音频是50s的音频，但是视频 你获得的是100s的视频
+         */
+        //显示时间戳 什么时候显示这个frame
+        if ((clock = frame->best_effort_timestamp) == AV_NOPTS_VALUE) {
+            clock = 0;
+        }
         //获得 当前这一个画面 播放的相对的时间
-        double clock = frame->best_effort_timestamp * av_q2d(time_base);
+        //av_q2d转为双精度浮点数 乘以 pts 得到pts --- 显示时间:秒
+        double clock = clock * av_q2d(time_base);
+        //frame->repeat_pict = 当解码时，这张图片需要要延迟多久显示
+        //需要求出扩展延时：
+        //extra_delay = repeat_pict / (2*fps) 需要延迟这么久来显示
         //额外的间隔时间
         double extra_delay = frame->repeat_pict / (2 * fps);
         // 真实需要的间隔时间
@@ -183,6 +196,16 @@ void VideoChannel::render() {
             }
         }
 #endif
+        //diff太大了不回调了
+      if (javaCallHelper && !audioChannel) {
+            javaCallHelper->onProgress(THREAD_CHILD, clock);
+      }
+        //src_linesize: 表示每一行存放的 字节长度
+        sws_scale(swsContext, reinterpret_cast<const uint8_t *const *>(frame->data),
+                  frame->linesize, 0,
+                  avCodecContext->height,
+                  dst_data,
+                  dst_linesize);
         //回调出去进行播放
         callback(dst_data[0], dst_linesize[0], avCodecContext->width, avCodecContext->height);
         releaseAvFrame(&frame);

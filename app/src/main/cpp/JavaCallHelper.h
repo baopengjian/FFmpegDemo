@@ -14,12 +14,16 @@ public:
     //回调java
     void  onError(int thread,int errorCode);
     void onPrepare(int thread);
+    void onProgress(int thread, int progress);
 private:
     JavaVM *vm;
     JNIEnv *env;
     jobject  instance;
     jmethodID onErrorId;
     jmethodID onPrepareId;
+    jmethodID jmid_progress;
+
+
 };
 
 

@@ -14,8 +14,10 @@ public class DNPlayer implements SurfaceHolder.Callback {
 
     private String dataSource;
     private SurfaceHolder holder;
-    private OnPrepareListener listener;
 
+    private OnPrepareListener listener;
+    private OnErrorListener onErrorListener;
+    private OnProgressListener onProgressListener;
     /**
      * 让使用 设置播放的文件 或者 直播地址
      */
@@ -35,6 +37,15 @@ public class DNPlayer implements SurfaceHolder.Callback {
      */
     public void start(){
         native_start();
+    }
+
+    /**
+     * native 回调给java 播放进去的
+     */
+    public void onProgress(int progress) {
+        if (null != onProgressListener) {
+            onProgressListener.onProgress(progress);
+        }
     }
 
     /**
@@ -71,8 +82,24 @@ public class DNPlayer implements SurfaceHolder.Callback {
         this.listener = listener;
     }
 
+    public void setOnErrorListener(OnErrorListener onErrorListener) {
+        this.onErrorListener = onErrorListener;
+    }
+
+    public void setOnProgressListener(OnProgressListener onProgressListener) {
+        this.onProgressListener = onProgressListener;
+    }
+
     public interface OnPrepareListener{
         void onPrepare();
+    }
+
+    public interface OnErrorListener {
+        void onError(int error);
+    }
+
+    public interface OnProgressListener {
+        void onProgress(int progress);
     }
 
     /**
@@ -108,6 +135,19 @@ public class DNPlayer implements SurfaceHolder.Callback {
 
     }
 
+    public int getDuration() {
+        return native_getDuration();
+    }
+
+    public void seek(final int progress) {
+        new Thread() {
+            @Override
+            public void run() {
+                native_seek(progress);
+            }
+        }.start();
+    }
+
     native void native_prepare(String dataSource);
 
     native void native_start();
@@ -117,4 +157,8 @@ public class DNPlayer implements SurfaceHolder.Callback {
     native void native_release();
 
     native void native_setSurface(Surface suface);
+
+    private native int native_getDuration();
+
+    private native void native_seek(int progress);
 }

@@ -12,6 +12,13 @@
         android:layout_width="match_parent"
         android:layout_height="200dp"
         />
+    <SeekBar
+        android:visibility="gone"
+        android:max="100"
+        android:id="@+id/seekBar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"/>
+
     <Button
         android:onClick="start"
         android:text="播放"

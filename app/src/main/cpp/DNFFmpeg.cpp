@@ -24,6 +24,7 @@ DNFFmpeg::DNFFmpeg(JavaCallHelper *callHelper, const char *dataSource) {
     //strlen 获得字符串的长度 不包括\0
     this->dataSource = new char[strlen(dataSource) + 1];
     strcpy(this->dataSource, dataSource);
+    duration = 0;
 }
 
 DNFFmpeg::~DNFFmpeg() {
@@ -66,6 +67,11 @@ void DNFFmpeg::_prepare() {
             callHelper->onError(THREAD_CHILD, FFMPEG_CAN_NOT_FIND_STREAMS);
         }
         return;
+    }
+    //视频时长（单位：微秒us，转换为秒需要除以1000000）
+    duration = formatContext->duration / 1000000;
+    if(duration <= 0){
+        duration = 0;
     }
     //nb_streams :几个流(几段视频/音频)
     for (int i = 0; i < formatContext->nb_streams; ++i) {
@@ -119,14 +125,14 @@ void DNFFmpeg::_prepare() {
         //音频
         if (codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
             //0
-            audioChannel = new AudioChannel(i, context, time_base);
+            audioChannel = new AudioChannel(i,callHelper, context, time_base);
         } else if (codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
             //1
             //帧率： 单位时间内 需要显示多少个图像
             AVRational frame_rate = stream->avg_frame_rate;
             int fps = av_q2d(frame_rate);
 
-            videoChannel = new VideoChannel(i, context, time_base, fps);
+            videoChannel = new VideoChannel(i,callHelper, context, time_base, fps);
             videoChannel->setRenderFrameCallback(callback);
         }
     }
@@ -159,6 +165,7 @@ void DNFFmpeg::start() {
     if (audioChannel) {
         audioChannel->play();
     }
+
     if (videoChannel) {
         videoChannel->setAudioChannel(audioChannel);
         videoChannel->play();
@@ -175,12 +182,14 @@ void DNFFmpeg::_start() {
     while (isPlaying) {
         //读取文件的时候没有网络请求，一下子读完了，可能导致oom
         //特别是读本地文件的时候 一下子就读完了
-        if (audioChannel && audioChannel->packets.size() > 100) {
+        if (audioChannel && audioChannel->packets.size() > 500) {
             //10ms
+            LOGE("audioChannel->packets 满了 开始睡眠");
             av_usleep(1000 * 10);
             continue;
         }
-        if (videoChannel && videoChannel->packets.size() > 100) {
+        if (videoChannel && videoChannel->packets.size() > 500) {
+            LOGE("videoChannel->packets 满了 开始睡眠");
             av_usleep(1000 * 10);
             continue;
         }
@@ -190,9 +199,9 @@ void DNFFmpeg::_start() {
         if (ret == 0) {
             //stream_index 这一个流的一个序号
             if (audioChannel && packet->stream_index == audioChannel->id) {
-                audioChannel->packets.push(packet);
+                 audioChannel->packets.push(packet);
             } else if (videoChannel && packet->stream_index == videoChannel->id) {
-                videoChannel->packets.push(packet);
+                 videoChannel->packets.push(packet);
             }
         } else if (ret == AVERROR_EOF) {
             //读取完成 但是可能还没播放完
@@ -217,13 +226,20 @@ void DNFFmpeg::setRenderFrameCallback(RenderFrameCallback callback) {
     this->callback = callback;
 }
 
+void DNFFmpeg::seek(int i) {
+
+}
+
 void *async_stop(void *args) {
     DNFFmpeg *ffmpeg = static_cast<DNFFmpeg *>(args);
     //   等待prepare结束
     pthread_join(ffmpeg->pid, 0);
     ffmpeg->isPlaying = 0;
     // 保证 start线程结束
-    pthread_join(ffmpeg->pid_play, 0);
+    if(ffmpeg->pid_play){
+        pthread_join(ffmpeg->pid_play, 0);
+    }
+
     DELETE(ffmpeg->videoChannel);
     DELETE(ffmpeg->audioChannel);
     // 这时候释放就不会出现问题了
@@ -239,6 +255,12 @@ void *async_stop(void *args) {
 
 void DNFFmpeg::stop() {
     callHelper = 0;
+    if (audioChannel) {
+        audioChannel->javaCallHelper = 0;
+    }
+    if (videoChannel) {
+        videoChannel->javaCallHelper = 0;
+    }
     // formatContext
     pthread_create(&pid_stop, 0, async_stop, this);
 };
