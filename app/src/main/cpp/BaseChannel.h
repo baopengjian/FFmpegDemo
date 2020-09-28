@@ -14,8 +14,10 @@ extern "C" {
 
 class BaseChannel {
 public:
-    BaseChannel(int id,JavaCallHelper *javaCallHelper, AVCodecContext *avCodecContext, AVRational time_base) : id(id),
-            avCodecContext(avCodecContext),javaCallHelper(javaCallHelper), time_base(time_base) {
+    BaseChannel(int id, JavaCallHelper *javaCallHelper, AVCodecContext *avCodecContext,
+                AVRational time_base) : id(id),
+                                        avCodecContext(avCodecContext),
+                                        javaCallHelper(javaCallHelper), time_base(time_base) {
         frames.setReleaseCallback(releaseAvFrame);
         packets.setReleaseCallback(releaseAvPacket);
     }
@@ -51,6 +53,21 @@ public:
             // 指针的指针能够修改传递进来的指针的指向
             *frame = 0;
         }
+    }
+
+    void clear() {
+        packets.clear();
+        frames.clear();
+    }
+
+    void stopWork() {
+        packets.setWork(0);
+        frames.setWork(0);
+    }
+
+    void startWork() {
+        packets.setWork(1);
+        frames.setWork(1);
     }
 
     //纯虚方法 相当于 抽象方法

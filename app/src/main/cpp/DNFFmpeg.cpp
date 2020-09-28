@@ -25,9 +25,11 @@ DNFFmpeg::DNFFmpeg(JavaCallHelper *callHelper, const char *dataSource) {
     this->dataSource = new char[strlen(dataSource) + 1];
     strcpy(this->dataSource, dataSource);
     duration = 0;
+    pthread_mutex_init(&seekMutex, 0);
 }
 
 DNFFmpeg::~DNFFmpeg() {
+    pthread_mutex_destroy(&seekMutex);
     //释放
     DELETE(dataSource);
 }
@@ -70,7 +72,7 @@ void DNFFmpeg::_prepare() {
     }
     //视频时长（单位：微秒us，转换为秒需要除以1000000）
     duration = formatContext->duration / 1000000;
-    if(duration <= 0){
+    if (duration <= 0) {
         duration = 0;
     }
     //nb_streams :几个流(几段视频/音频)
@@ -125,14 +127,14 @@ void DNFFmpeg::_prepare() {
         //音频
         if (codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
             //0
-            audioChannel = new AudioChannel(i,callHelper, context, time_base);
+            audioChannel = new AudioChannel(i, callHelper, context, time_base);
         } else if (codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
             //1
             //帧率： 单位时间内 需要显示多少个图像
             AVRational frame_rate = stream->avg_frame_rate;
             int fps = av_q2d(frame_rate);
 
-            videoChannel = new VideoChannel(i,callHelper, context, time_base, fps);
+            videoChannel = new VideoChannel(i, callHelper, context, time_base, fps);
             videoChannel->setRenderFrameCallback(callback);
         }
     }
@@ -184,29 +186,32 @@ void DNFFmpeg::_start() {
         //特别是读本地文件的时候 一下子就读完了
         if (audioChannel && audioChannel->packets.size() > 500) {
             //10ms
-            LOGE("audioChannel->packets 满了 开始睡眠");
             av_usleep(1000 * 10);
             continue;
         }
         if (videoChannel && videoChannel->packets.size() > 500) {
-            LOGE("videoChannel->packets 满了 开始睡眠");
             av_usleep(1000 * 10);
             continue;
         }
+        //锁住formatContext
+        pthread_mutex_lock(&seekMutex);
+
         AVPacket *packet = av_packet_alloc();
         ret = av_read_frame(formatContext, packet);
+        pthread_mutex_unlock(&seekMutex);
         //=0成功 其他:失败
         if (ret == 0) {
             //stream_index 这一个流的一个序号
             if (audioChannel && packet->stream_index == audioChannel->id) {
-                 audioChannel->packets.push(packet);
+                audioChannel->packets.push(packet);
             } else if (videoChannel && packet->stream_index == videoChannel->id) {
-                 videoChannel->packets.push(packet);
+                videoChannel->packets.push(packet);
             }
         } else if (ret == AVERROR_EOF) {
             //读取完成 但是可能还没播放完
             if (audioChannel->packets.empty() && audioChannel->frames.empty()
                 && videoChannel->packets.empty() && videoChannel->frames.empty()) {
+                LOGE("播放完毕。。。");
                 break;
             }
             //为什么这里要让它继续循环 而不是sleep
@@ -227,6 +232,45 @@ void DNFFmpeg::setRenderFrameCallback(RenderFrameCallback callback) {
 }
 
 void DNFFmpeg::seek(int i) {
+    //进去必须 在0- duration 范围之类
+    if (i < 0 || i >= duration) {
+        return;
+    }
+
+    if(!audioChannel && !videoChannel){
+        return;
+    }
+
+    if(!formatContext){
+        return;
+    }
+    isSeek = 1;
+    pthread_mutex_lock(&seekMutex);
+    //单位是 微秒
+    int64_t seek = i*1000000;
+    //seek到请求的时间 之前最近的关键帧
+    // 只有从关键帧才能开始解码出完整图片
+    av_seek_frame(formatContext,-1,seek,AVSEEK_FLAG_BACKWARD);
+    //    avformat_seek_file(formatContext, -1, INT64_MIN, seek, INT64_MAX, 0);
+    // 音频、与视频队列中的数据 是不是就可以丢掉了？
+    if(audioChannel){
+        audioChannel->stopWork();
+        //暂停队列
+        //可以清空缓存
+//        avcodec_flush_buffers();
+        audioChannel->clear();
+        //启动队列
+        audioChannel->startWork();
+    }
+
+    if(videoChannel){
+        videoChannel->stopWork();
+        videoChannel->clear();
+        videoChannel->startWork();
+    }
+
+    pthread_mutex_unlock(&seekMutex);
+    isSeek = 0;
 
 }
 
@@ -236,7 +280,7 @@ void *async_stop(void *args) {
     pthread_join(ffmpeg->pid, 0);
     ffmpeg->isPlaying = 0;
     // 保证 start线程结束
-    if(ffmpeg->pid_play){
+    if (ffmpeg->pid_play) {
         pthread_join(ffmpeg->pid_play, 0);
     }
 

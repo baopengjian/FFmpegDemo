@@ -4,6 +4,7 @@ import android.util.Log;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.Surface;
+
 /**
  * 提供java 进行播放 停止 等函数
  */
@@ -18,10 +19,11 @@ public class DNPlayer implements SurfaceHolder.Callback {
     private OnPrepareListener listener;
     private OnErrorListener onErrorListener;
     private OnProgressListener onProgressListener;
+
     /**
      * 让使用 设置播放的文件 或者 直播地址
      */
-    public void setDataSource(String dataSource){
+    public void setDataSource(String dataSource) {
         this.dataSource = dataSource;
     }
 
@@ -35,7 +37,7 @@ public class DNPlayer implements SurfaceHolder.Callback {
     /**
      * 开始播放
      */
-    public void start(){
+    public void start() {
         native_start();
     }
 
@@ -51,34 +53,37 @@ public class DNPlayer implements SurfaceHolder.Callback {
     /**
      * 停止播放
      */
-    public void stop(){
+    public void stop() {
         native_stop();
     }
 
-    public void release(){
+    public void release() {
         holder.removeCallback(this);
         native_release();
     }
 
     public void setSurfaceView(SurfaceView surfaceView) {
-        if(null != holder){
+        if (null != holder) {
             holder.removeCallback(this);
         }
         holder = surfaceView.getHolder();
         holder.addCallback(this);
     }
 
-    public void onError(int errorCode){
-        Log.e("FFmpeg","onError"+errorCode);
+    public void onError(int errorCode) {
+        if (null == onErrorListener) {
+            onErrorListener.onError(errorCode);
+        }
+        Log.e("FFmpeg", "onError" + errorCode);
     }
 
-    public void onPrepare(){
-        if(null != listener){
+    public void onPrepare() {
+        if (null != listener) {
             listener.onPrepare();
         }
     }
 
-    public void setOnPrepareListener(OnPrepareListener listener){
+    public void setOnPrepareListener(OnPrepareListener listener) {
         this.listener = listener;
     }
 
@@ -90,7 +95,7 @@ public class DNPlayer implements SurfaceHolder.Callback {
         this.onProgressListener = onProgressListener;
     }
 
-    public interface OnPrepareListener{
+    public interface OnPrepareListener {
         void onPrepare();
     }
 
@@ -122,7 +127,7 @@ public class DNPlayer implements SurfaceHolder.Callback {
      */
     @Override
     public void surfaceChanged(SurfaceHolder surfaceHolder, int i, int i1, int i2) {
-       native_setSurface(surfaceHolder.getSurface()) ;
+        native_setSurface(surfaceHolder.getSurface());
     }
 
     /**

@@ -42,15 +42,14 @@ AudioChannel::~AudioChannel() {
 }
 
 void AudioChannel::play() {
-    //设置为播放状态
-    packets.setWork(1);
-    frames.setWork(1);
     //0+输出声道+输出采样位+输出采样率+  输入的3个参数
     swrContext = swr_alloc_set_opts(0, AV_CH_LAYOUT_STEREO, AV_SAMPLE_FMT_S16, out_sample_rate,
                                     avCodecContext->channel_layout, avCodecContext->sample_fmt,
                                     avCodecContext->sample_rate, 0, 0);
     //初始化
     swr_init(swrContext);
+    //设置为播放状态
+    startWork();
     isPlaying = 1;
     //1 、解码
     pthread_create(&pid_audio_decode, 0, audio_decode, this);

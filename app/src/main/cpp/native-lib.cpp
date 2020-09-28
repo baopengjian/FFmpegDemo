@@ -15,7 +15,7 @@ int JNI_OnLoad(JavaVM *vm, void *r) {
     return JNI_VERSION_1_6;
 }
 //画画
-void render(uint8_t *data, int lineszie, int w, int h) {
+void render(uint8_t *data, int linesize, int w, int h) {
     pthread_mutex_lock(&mutex);
     if (!window) {
         pthread_mutex_unlock(&mutex);
@@ -33,14 +33,14 @@ void render(uint8_t *data, int lineszie, int w, int h) {
         pthread_mutex_unlock(&mutex);
         return;
     }
-    //填充rgb数据给dst_data
     uint8_t *dst_data = static_cast<uint8_t *>(window_buffer.bits);
-    // stride：一行多少个数据（RGBA） *4
+    //一行需要多少像素 * 4(RGBA)
     int dst_linesize = window_buffer.stride * 4;
-    //一行一行的拷贝
+    uint8_t *src_data = data;
+    int src_linesize = linesize;
+    //一次拷贝一行
     for (int i = 0; i < window_buffer.height; ++i) {
-        //memcpy(dst_data , data, dst_linesize);
-        memcpy(dst_data + i * dst_linesize, data + i * lineszie, dst_linesize);
+        memcpy(dst_data + i * dst_linesize, src_data + i * src_linesize, dst_linesize);
     }
     ANativeWindow_unlockAndPost(window);
     pthread_mutex_unlock(&mutex);

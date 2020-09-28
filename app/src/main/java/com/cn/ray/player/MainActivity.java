@@ -5,11 +5,8 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
-import android.view.SurfaceView;
 import android.view.View;
-import android.widget.ArrayAdapter;
 import android.widget.ListView;
-import android.widget.SimpleAdapter;
 import android.widget.TextView;
 
 import java.util.ArrayList;
@@ -20,6 +17,12 @@ import java.util.Map;
 /**
  * 测试url
  * <p>
+ *   本地文件有可能申请权限失败，具体看Android高版本申请读取文件权限
+ *
+ *   TODO 1 停止功能
+ *        2 卡顿
+ *        3 停止后退出闪退
+ *        4 重复start，出现多次播放（屏幕闪烁）
  */
 public class MainActivity extends AppCompatActivity {
 

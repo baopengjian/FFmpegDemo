@@ -42,6 +42,8 @@ public:
     pthread_t pid;
     pthread_t pid_play = 0;
     pthread_t pid_stop;
+
+    pthread_mutex_t seekMutex;
     AVFormatContext *formatContext = 0;
     JavaCallHelper *callHelper = 0;
     AudioChannel *audioChannel = 0;
@@ -49,6 +51,7 @@ public:
     RenderFrameCallback callback;
     bool isPlaying;
     int duration;
+    bool isSeek = 0;
 };
 
 

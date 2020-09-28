@@ -51,7 +51,8 @@ void dropAvFrame(queue<AVFrame *> &q) {
     }
 }
 
-VideoChannel::VideoChannel(int id, JavaCallHelper *javaCallHelper, AVCodecContext *avCodecContext, AVRational time_base, int fps)
+VideoChannel::VideoChannel(int id, JavaCallHelper *javaCallHelper, AVCodecContext *avCodecContext,
+                           AVRational time_base, int fps)
         : BaseChannel(id, javaCallHelper, avCodecContext, time_base) {
 
     this->fps = fps;
@@ -69,9 +70,8 @@ void VideoChannel::setAudioChannel(AudioChannel *audioChannel) {
 }
 
 void VideoChannel::play() {
+    startWork();
     isPlaying = 1;
-    frames.setWork(1);
-    packets.setWork(1);
     //1、解码
     pthread_create(&pid_decode, 0, decode_task, this);
     //2、播放
@@ -141,6 +141,7 @@ void VideoChannel::render() {
         if (!ret) {
             continue;
         }
+
 #if 1
         /**
          *  seek需要注意的点：编码器中存在缓存
@@ -197,9 +198,9 @@ void VideoChannel::render() {
         }
 #endif
         //diff太大了不回调了
-      if (javaCallHelper && !audioChannel) {
+        if (javaCallHelper && !audioChannel) {
             javaCallHelper->onProgress(THREAD_CHILD, clock);
-      }
+        }
         //src_linesize: 表示每一行存放的 字节长度
         sws_scale(swsContext, reinterpret_cast<const uint8_t *const *>(frame->data),
                   frame->linesize, 0,
