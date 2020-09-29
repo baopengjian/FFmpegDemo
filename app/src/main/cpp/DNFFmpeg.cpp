@@ -18,6 +18,12 @@ void *task_prepare(void *args) {
     return 0;
 }
 
+void *play(void *args) {
+    DNFFmpeg *ffmpeg = static_cast<DNFFmpeg *>(args);
+    ffmpeg->_start();
+    return 0;
+}
+
 DNFFmpeg::DNFFmpeg(JavaCallHelper *callHelper, const char *dataSource) {
     this->callHelper = callHelper;
     //防止 dataSource参数 指向的内存被释放
@@ -40,9 +46,13 @@ void DNFFmpeg::prepare() {
     pthread_create(&pid, 0, task_prepare, this);
 }
 
+
+
 void DNFFmpeg::_prepare() {
     // 初始化网络 让ffmpeg能够使用网络
     avformat_network_init();
+    // 代表一个 视频/音频 包含了视频、音频的各种信息
+    formatContext = avformat_alloc_context();
     //1、打开媒体地址(文件地址、直播地址)
     // AVFormatContext  包含了 视频的 信息(宽、高等)
     //文件路径不对 手机没网
@@ -152,11 +162,7 @@ void DNFFmpeg::_prepare() {
     }
 };
 
-void *play(void *args) {
-    DNFFmpeg *ffmpeg = static_cast<DNFFmpeg *>(args);
-    ffmpeg->_start();
-    return 0;
-}
+
 
 
 void DNFFmpeg::start() {
@@ -184,12 +190,12 @@ void DNFFmpeg::_start() {
     while (isPlaying) {
         //读取文件的时候没有网络请求，一下子读完了，可能导致oom
         //特别是读本地文件的时候 一下子就读完了
-        if (audioChannel && audioChannel->packets.size() > 500) {
+        if (audioChannel && audioChannel->packets.size() > 100) {
             //10ms
             av_usleep(1000 * 10);
             continue;
         }
-        if (videoChannel && videoChannel->packets.size() > 500) {
+        if (videoChannel && videoChannel->packets.size() > 100) {
             av_usleep(1000 * 10);
             continue;
         }
@@ -277,13 +283,16 @@ void DNFFmpeg::seek(int i) {
 void *async_stop(void *args) {
     DNFFmpeg *ffmpeg = static_cast<DNFFmpeg *>(args);
     //   等待prepare结束
-    pthread_join(ffmpeg->pid, 0);
+    if(ffmpeg->pid){
+        pthread_join(ffmpeg->pid, 0);
+    }
+    ffmpeg->pid = 0;
     ffmpeg->isPlaying = 0;
     // 保证 start线程结束
     if (ffmpeg->pid_play) {
         pthread_join(ffmpeg->pid_play, 0);
     }
-
+    ffmpeg->pid_play = 0;
     DELETE(ffmpeg->videoChannel);
     DELETE(ffmpeg->audioChannel);
     // 这时候释放就不会出现问题了

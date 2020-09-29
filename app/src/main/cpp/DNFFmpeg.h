@@ -41,7 +41,7 @@ public:
     char *dataSource;
     pthread_t pid;
     pthread_t pid_play = 0;
-    pthread_t pid_stop;
+    pthread_t pid_stop = 0;
 
     pthread_mutex_t seekMutex;
     AVFormatContext *formatContext = 0;

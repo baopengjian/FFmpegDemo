@@ -5,7 +5,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    tools:context=".MainActivity">
+    tools:context=".DnPlayerActivity">
 
     <SurfaceView
         android:id="@+id/surface_view"
@@ -20,6 +20,7 @@
         android:layout_height="wrap_content"/>
 
     <Button
+        android:layout_marginTop="10dp"
         android:onClick="start"
         android:text="播放"
         android:textColor="@color/colorPrimary"
@@ -27,6 +28,7 @@
         android:layout_height="wrap_content" />
 
     <Button
+        android:layout_marginTop="10dp"
         android:onClick="stop"
         android:text="停止"
         android:textColor="@color/colorPrimary"

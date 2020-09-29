@@ -82,10 +82,6 @@ void VideoChannel::play() {
 void VideoChannel::decode() {
     AVPacket *packet = 0;
     while (isPlaying) {
-        if (frames.size() > 500) {
-            av_usleep(1000 * 10);
-            continue;
-        }
         //取出一个数据包
         int ret = packets.pop(packet);
         if (!isPlaying) {
@@ -98,8 +94,11 @@ void VideoChannel::decode() {
         //把包丢给解码器
         ret = avcodec_send_packet(avCodecContext, packet);
         releaseAvPacket(&packet);
-        //重试
-        if (ret != 0) {
+        if (ret == AVERROR(EAGAIN)) {
+            //需要更多数据
+            continue;
+        } else if (ret < 0) {
+            //失败
             break;
         }
         //代表了一个图像 (将这个图像先输出来)
@@ -108,9 +107,15 @@ void VideoChannel::decode() {
         ret = avcodec_receive_frame(avCodecContext, frame);
         //需要更多的数据才能够进行解码
         if (ret == AVERROR(EAGAIN)) {
+            //需要更多数据
             continue;
-        } else if (ret != 0) {
+        } else if (ret < 0) {
+            //失败
             break;
+        }
+        while (frames.size() > 100 && isPlaying) {
+            av_usleep(1000 * 10);
+            continue;
         }
         //再开一个线程 来播放 (流畅度)
         frames.push(frame);

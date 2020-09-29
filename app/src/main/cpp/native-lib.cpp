@@ -84,6 +84,7 @@ JNIEXPORT void JNICALL
 Java_com_cn_ray_player_DNPlayer_native_1stop(JNIEnv *env, jobject instance) {
     if (ffmpeg) {
         ffmpeg->stop();
+        ffmpeg = 0;
     }
     DELETE(helper);
 }
