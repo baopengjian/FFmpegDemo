@@ -73,6 +73,10 @@ public:
     //纯虚方法 相当于 抽象方法
     virtual void play() = 0;
 
+    virtual void resume() = 0;
+
+    virtual void pause() = 0;
+
     virtual void stop() = 0;
 
     int id;
@@ -81,6 +85,8 @@ public:
     //解码数据包队列
     SafeQueue<AVFrame *> frames;
     bool isPlaying;
+    bool isPause = 0;
+
     AVCodecContext *avCodecContext;
     AVRational time_base;
     JavaCallHelper *javaCallHelper;

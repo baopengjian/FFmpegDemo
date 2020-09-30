@@ -21,6 +21,10 @@ public:
 
     void play();
 
+    void pause();
+
+    void resume();
+
     void stop();
 
     void decode();
@@ -58,7 +62,8 @@ private:
     //重采样
     SwrContext *swrContext = 0;
 
-
+    pthread_cond_t cond;
+    pthread_mutex_t mutex;
 };
 
 

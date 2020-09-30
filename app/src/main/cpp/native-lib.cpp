@@ -119,3 +119,21 @@ Java_com_cn_ray_player_DNPlayer_native_1seek(JNIEnv *env, jobject instance, jint
         ffmpeg->seek(progress);
     }
 }
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_cn_ray_player_DNPlayer_native_1pause(JNIEnv *env, jobject instance) {
+    if (ffmpeg){
+        ffmpeg->pause();
+    }
+}
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_cn_ray_player_DNPlayer_native_1resume(JNIEnv *env, jobject instance) {
+
+    if (ffmpeg){
+        ffmpeg->resume();
+    }
+
+}

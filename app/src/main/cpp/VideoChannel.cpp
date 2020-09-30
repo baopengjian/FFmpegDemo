@@ -59,10 +59,14 @@ VideoChannel::VideoChannel(int id, JavaCallHelper *javaCallHelper, AVCodecContex
     //  用于 设置一个 同步操作 队列的一个函数指针
 //    packets.setSyncHandle(dropAvPacket);
     frames.setSyncHandle(dropAvFrame);
+
+    pthread_mutex_init(&mutex, NULL);
+    pthread_cond_init(&cond, NULL);
 }
 
 VideoChannel::~VideoChannel() {
-
+    pthread_cond_destroy(&cond);
+    pthread_mutex_destroy(&mutex);
 }
 
 void VideoChannel::setAudioChannel(AudioChannel *audioChannel) {
@@ -125,6 +129,7 @@ void VideoChannel::decode() {
 
 //播放
 void VideoChannel::render() {
+    pthread_mutex_lock(&mutex);
     //目标： RGBA
     swsContext = sws_getContext(
             avCodecContext->width, avCodecContext->height, avCodecContext->pix_fmt,
@@ -139,6 +144,10 @@ void VideoChannel::render() {
     av_image_alloc(dst_data, dst_linesize,
                    avCodecContext->width, avCodecContext->height, AV_PIX_FMT_RGBA, 1);
     while (isPlaying) {
+        if(isPause){
+            LOGE("启动了锁3");
+            pthread_cond_wait(&cond, &mutex);
+        }
         int ret = frames.pop(frame);
         if (!isPlaying) {
             break;
@@ -221,10 +230,21 @@ void VideoChannel::render() {
     isPlaying = 0;
     sws_freeContext(swsContext);
     swsContext = 0;
+    pthread_mutex_unlock(&mutex);
 }
 
 void VideoChannel::setRenderFrameCallback(RenderFrameCallback callback) {
     this->callback = callback;
+}
+
+void VideoChannel::pause() {
+    LOGE("启动了锁2");
+    isPause = 1;
+}
+
+void VideoChannel::resume() {
+    isPause = 0;
+    pthread_cond_signal(&cond);
 }
 
 void VideoChannel::stop() {

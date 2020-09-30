@@ -32,6 +32,9 @@ AudioChannel::AudioChannel(int id, JavaCallHelper *javaCallHelper, AVCodecContex
     // 44100*(双声道)*(16位)
     data = static_cast<uint8_t *>(malloc(out_sample_rate * out_channels * out_samplesize));
     memset(data, 0, out_sample_rate * out_channels * out_samplesize);
+
+    pthread_mutex_init(&mutex, NULL);
+    pthread_cond_init(&cond, NULL);
 }
 
 AudioChannel::~AudioChannel() {
@@ -39,6 +42,9 @@ AudioChannel::~AudioChannel() {
         free(data);
         data = 0;
     }
+
+    pthread_cond_destroy(&cond);
+    pthread_mutex_destroy(&mutex);
 }
 
 void AudioChannel::play() {
@@ -105,9 +111,14 @@ void AudioChannel::decode() {
 
 //返回获取的pcm数据大小
 int AudioChannel::getPcm() {
+    pthread_mutex_lock(&mutex);
     int data_size = 0;
     AVFrame *frame = 0;
     while (isPlaying) {
+        if(isPause){
+            pthread_cond_wait(&cond, &mutex);
+        }
+
         int ret = frames.pop(frame);
         if (!isPlaying) {
             break;
@@ -144,6 +155,7 @@ int AudioChannel::getPcm() {
         break;
     }
     releaseAvFrame(&frame);
+    pthread_mutex_unlock(&mutex);
     return data_size;
 }
 
@@ -246,6 +258,15 @@ void AudioChannel::_play() {
      * 6、手动激活一下这个回调
      */
     bqPlayerCallback(bqPlayerBufferQueueInterface, this);
+}
+
+void AudioChannel::pause() {
+    isPause = 1;
+}
+
+void AudioChannel::resume() {
+    isPause = 0;
+    pthread_cond_signal(&cond);
 }
 
 void AudioChannel::stop() {

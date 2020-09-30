@@ -106,6 +106,14 @@ public class DnPlayerActivity extends AppCompatActivity implements SeekBar.OnSee
         dnPlayer.prepare();
     }
 
+    public void pause(View view) {
+        dnPlayer.pause();
+    }
+
+    public void resume(View view) {
+        dnPlayer.resume();
+    }
+
     public void stop(View view) {
           dnPlayer.stop();
     }

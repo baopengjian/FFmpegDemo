@@ -29,6 +29,22 @@
 
     <Button
         android:layout_marginTop="10dp"
+        android:onClick="pause"
+        android:text="暂停"
+        android:textColor="@color/colorPrimary"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
+
+    <Button
+        android:layout_marginTop="10dp"
+        android:onClick="resume"
+        android:text="继续"
+        android:textColor="@color/colorPrimary"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
+
+    <Button
+        android:layout_marginTop="10dp"
         android:onClick="stop"
         android:text="停止"
         android:textColor="@color/colorPrimary"

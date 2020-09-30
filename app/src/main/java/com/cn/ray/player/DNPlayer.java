@@ -153,9 +153,21 @@ public class DNPlayer implements SurfaceHolder.Callback {
         }.start();
     }
 
+    public void pause(){
+        native_pause();
+    }
+
+    public void resume(){
+        native_resume();
+    }
+
     native void native_prepare(String dataSource);
 
     native void native_start();
+
+    native void native_pause();
+
+    native void native_resume();
 
     native void native_stop();
 

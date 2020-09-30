@@ -37,6 +37,10 @@ public:
 
     void seek(int i);
 
+    void pause();
+
+    void resume();
+
 public:
     char *dataSource;
     pthread_t pid;
@@ -52,6 +56,8 @@ public:
     bool isPlaying;
     int duration;
     bool isSeek = 0;
+
+
 };
 
 

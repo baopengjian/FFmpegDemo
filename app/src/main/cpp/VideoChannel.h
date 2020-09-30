@@ -29,6 +29,10 @@ public:
     //解码+播放
     void play();
 
+    void pause();
+
+    void resume();
+
     void stop();
 
     void decode();
@@ -44,6 +48,9 @@ private:
     SwsContext *swsContext = 0;
     RenderFrameCallback callback;
     AudioChannel *audioChannel = 0;
+
+    pthread_cond_t cond;
+    pthread_mutex_t mutex;
 };
 
 

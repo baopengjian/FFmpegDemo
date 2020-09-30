@@ -47,7 +47,6 @@ void DNFFmpeg::prepare() {
 }
 
 
-
 void DNFFmpeg::_prepare() {
     // 初始化网络 让ffmpeg能够使用网络
     avformat_network_init();
@@ -163,8 +162,6 @@ void DNFFmpeg::_prepare() {
 };
 
 
-
-
 void DNFFmpeg::start() {
     // 正在播放
     isPlaying = 1;
@@ -243,23 +240,23 @@ void DNFFmpeg::seek(int i) {
         return;
     }
 
-    if(!audioChannel && !videoChannel){
+    if (!audioChannel && !videoChannel) {
         return;
     }
 
-    if(!formatContext){
+    if (!formatContext) {
         return;
     }
     isSeek = 1;
     pthread_mutex_lock(&seekMutex);
     //单位是 微秒
-    int64_t seek = i*1000000;
+    int64_t seek = i * 1000000;
     //seek到请求的时间 之前最近的关键帧
     // 只有从关键帧才能开始解码出完整图片
-    av_seek_frame(formatContext,-1,seek,AVSEEK_FLAG_BACKWARD);
+    av_seek_frame(formatContext, -1, seek, AVSEEK_FLAG_BACKWARD);
     //    avformat_seek_file(formatContext, -1, INT64_MIN, seek, INT64_MAX, 0);
     // 音频、与视频队列中的数据 是不是就可以丢掉了？
-    if(audioChannel){
+    if (audioChannel) {
         audioChannel->stopWork();
         //暂停队列
         //可以清空缓存
@@ -269,7 +266,7 @@ void DNFFmpeg::seek(int i) {
         audioChannel->startWork();
     }
 
-    if(videoChannel){
+    if (videoChannel) {
         videoChannel->stopWork();
         videoChannel->clear();
         videoChannel->startWork();
@@ -280,10 +277,11 @@ void DNFFmpeg::seek(int i) {
 
 }
 
+
 void *async_stop(void *args) {
     DNFFmpeg *ffmpeg = static_cast<DNFFmpeg *>(args);
     //   等待prepare结束
-    if(ffmpeg->pid){
+    if (ffmpeg->pid) {
         pthread_join(ffmpeg->pid, 0);
     }
     ffmpeg->pid = 0;
@@ -316,4 +314,25 @@ void DNFFmpeg::stop() {
     }
     // formatContext
     pthread_create(&pid_stop, 0, async_stop, this);
+}
+
+void DNFFmpeg::pause() {
+    if (audioChannel) {
+        audioChannel->pause();
+    }
+
+    if (videoChannel) {
+        LOGE("启动了锁1");
+        videoChannel->pause();
+    }
+};
+
+void DNFFmpeg::resume() {
+    if (audioChannel) {
+        audioChannel->resume();
+    }
+
+    if (videoChannel) {
+        videoChannel->resume();
+    }
 };
