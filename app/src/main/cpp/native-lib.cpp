@@ -48,22 +48,26 @@ void render(uint8_t *data, int linesize, int w, int h) {
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_cn_ray_player_DNPlayer_native_1prepare(JNIEnv *env, jobject instance,
-                                                jstring dataSource_) {
+Java_com_cn_ray_player_DNPlayer_native_1prepare(JNIEnv *env, jobject instance, jstring dataSource_) {
     const char *dataSource = env->GetStringUTFChars(dataSource_, 0);
+
+    if(helper){
+        //防止重复开启
+        return;
+    }
     //创建播放器
      helper = new JavaCallHelper(javaVm, env, instance);
-    ffmpeg = new DNFFmpeg(helper, dataSource);
-    ffmpeg->setRenderFrameCallback(render);
-    ffmpeg->prepare();
-    env->ReleaseStringUTFChars(dataSource_, dataSource);
+     ffmpeg = new DNFFmpeg(helper, dataSource);
+     ffmpeg->setRenderFrameCallback(render);
+     ffmpeg->prepare();
+     env->ReleaseStringUTFChars(dataSource_, dataSource);
 }
 
 
 extern "C"
 JNIEXPORT void JNICALL
 Java_com_cn_ray_player_DNPlayer_native_1start(JNIEnv *env, jobject instance) {
-    ffmpeg->start();
+     ffmpeg->start();
 }
 
 extern "C"

@@ -53,7 +53,7 @@ public:
     AudioChannel *audioChannel = 0;
     VideoChannel *videoChannel = 0;
     RenderFrameCallback callback;
-    bool isPlaying;
+    bool isPlaying = 0;
     int duration;
     bool isSeek = 0;
 

@@ -163,9 +163,12 @@ void DNFFmpeg::_prepare() {
 
 
 void DNFFmpeg::start() {
-    // 正在播放
-    isPlaying = 1;
 
+    if(isPlaying){
+        return;
+    }
+
+    isPlaying = 1;
     //启动声音的解码与播放
     if (audioChannel) {
         audioChannel->play();
