@@ -164,7 +164,7 @@ void DNFFmpeg::_prepare() {
 
 void DNFFmpeg::start() {
 
-    if(isPlaying){
+    if (isPlaying) {
         return;
     }
 
@@ -178,7 +178,7 @@ void DNFFmpeg::start() {
         videoChannel->setAudioChannel(audioChannel);
         videoChannel->play();
     }
-    pthread_create(&pid_play, 0, play, this);
+    pthread_create(&pid_play, NULL, play, this);
 }
 
 /**
@@ -186,7 +186,7 @@ void DNFFmpeg::start() {
  */
 void DNFFmpeg::_start() {
     //1、读取媒体数据包(音视频数据包)
-    int ret;
+    int ret = 0;
     while (isPlaying) {
         //读取文件的时候没有网络请求，一下子读完了，可能导致oom
         //特别是读本地文件的时候 一下子就读完了
