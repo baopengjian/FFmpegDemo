@@ -257,12 +257,12 @@ void VideoChannel::render() {
         callback(dst_data[0], dst_linesize[0], avCodecContext->width, avCodecContext->height);
         releaseAvFrame(&frame);
     }
+    pthread_mutex_unlock(&mutex);
     av_freep(&dst_data[0]);
     releaseAvFrame(&frame);
     isPlaying = 0;
     sws_freeContext(swsContext);
     swsContext = 0;
-    pthread_mutex_unlock(&mutex);
 }
 
 void VideoChannel::setRenderFrameCallback(RenderFrameCallback callback) {

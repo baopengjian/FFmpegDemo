@@ -111,9 +111,9 @@ void AudioChannel::decode() {
 
 //返回获取的pcm数据大小
 int AudioChannel::getPcm() {
-    pthread_mutex_lock(&mutex);
     int data_size = 0;
     AVFrame *frame = 0;
+    pthread_mutex_lock(&mutex);
     while (isPlaying) {
         if(isPause){
             pthread_cond_wait(&cond, &mutex);
@@ -154,8 +154,8 @@ int AudioChannel::getPcm() {
         }
         break;
     }
-    releaseAvFrame(&frame);
     pthread_mutex_unlock(&mutex);
+    releaseAvFrame(&frame);
     return data_size;
 }
 
