@@ -214,6 +214,7 @@ void DNFFmpeg::_start() {
                 videoChannel->packets.push(packet);
             }
         } else if (ret == AVERROR_EOF) {
+            //TODO 释放 packet
             //读取完成 但是可能还没播放完
             if (audioChannel->packets.empty() && audioChannel->frames.empty()
                 && videoChannel->packets.empty() && videoChannel->frames.empty()) {
@@ -224,7 +225,7 @@ void DNFFmpeg::_start() {
             //如果是做直播 ，可以sleep
             //如果要支持点播(播放本地文件） seek 后退
         } else {
-            //
+            //TODO 释放 packet
             break;
         }
     }
